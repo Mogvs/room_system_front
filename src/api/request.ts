@@ -11,4 +11,27 @@ const service = axios.create({
     // 自定义请求头
     headers: {'memberToken': memberToken,'userToken': token},
 })
+
+
+//post method= {post | put}
+export function postAction(url,parameter) {
+    return axios({
+        baseURL: import.meta.env.VITE_APP_BASE_API,
+        url: url,
+        method:'post' ,
+        data: parameter,
+        headers: {'memberToken': memberToken,'userToken': token},
+    })
+}
+
+//get
+export function getAction(url,parameter) {
+    return axios({
+        baseURL: import.meta.env.VITE_APP_BASE_API,
+        url: url,
+        method: 'get',
+        params: parameter,
+        headers: {'memberToken': memberToken,'userToken': token},
+    })
+}
 export default service

@@ -59,6 +59,32 @@ export const staticRouter = [
 // 定义动态路由
 export const asyncRoutes = [
     {
+        path:'/hotel',
+        name:'hotel',
+        meta:{
+            title: '房间管理',
+            icon: 'GoldMedal',
+            role: ['ROLE_ADMIN']
+        },
+        redirect: '/hotel/roomtype',
+        component: ()=> import('@/views/system/layout/Index.vue'),
+        isMenu: true,
+        funcNode: 2,
+        children: [
+            {
+                path: 'roomtype',
+                name: 'Roomtype',
+                meta: {
+                    title: '房间类型管理',
+                    icon: 'Histogram',
+                    role: ['ROLE_ADMIN']
+                },
+                component: ()=> import('@/views/hotel/roomtype/RoomTypelist.vue')
+            },
+
+        ]
+    },
+    {
         path: '/system',
         name: 'system',
         meta: {
@@ -118,7 +144,6 @@ const whiteList = ['/login']
 router.beforeEach(async (to,from,next)=> {
     // 1.Nprogress 开始
     Nprogress.start()
-
     // 2.设置标题
     if(typeof(to.meta.title) === 'string'){
         document.title = to.meta.title ||'后台管理系统'
@@ -133,19 +158,21 @@ router.beforeEach(async (to,from,next)=> {
         next()
     }else{
         // 5.判断访问路径是前台还是后台
-        if(to.path.indexOf('hotel')!==-1){
+        if(to.path.indexOf('hotel222')!==-1){
             // 6.判断前台是否有token，没有重定向login
             const memberStore = useMemberStore()
             // 已经登录,直接放行
+            console.log('memberStore',memberStore)
             if(memberStore.memberToken!=''){
                 next()
             // 未登录，跳转到前台登录页
             }else{
-                return next({path: `/hotel/login?redirect=${to.path}`,replace:true})
+                return next({path: `/login?redirect=${to.path}`,replace:true})
             }
         }else {
             // 7.判断是否有token，没有重定向login
             const userStore = useUserStore()
+            console.log('userStore---',userStore)
             if(userStore.token!=''){
                 // 获取登录用户的角色
                 const { userInfo } =userStore
