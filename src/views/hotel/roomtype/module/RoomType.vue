@@ -1,6 +1,6 @@
 <template>
 
-  <el-dialog title="房间类型"  v-model="visible" >
+  <el-dialog :title="'房间类型'+pageTitle"  v-model="visible" >
     <el-form  ref="roomtype" :model="form" :rules="rules" :loading="loading" >
       <el-row :gutter="24">
         <el-col :span="24">
@@ -24,17 +24,21 @@
 </template>
 
 <script  lang="ts">
-import {ref,reactive} from 'vue'
+import {ref, reactive, toRefs, watch} from 'vue'
 import { ElMessage,FormInstance,FormRules } from 'element-plus'
-import {addRoomTypeApi} from "@/api/hotel/hotelApi";
+import {addRoomTypeApi,addRoomTypeInfoApi} from "@/api/hotel/hotelApi";
 import {addUserApi} from "@/api/system/user/user";
 export default {
   name:'RoomType',
-  setup(){
-     let visible = ref(false);
-     let form=reactive({
-       typeName:'', //房间类型
-        typeSort:'', //房间序号
+  props:['pageTitle','id'],
+  setup(props,content){
+     let state=reactive({
+       form:{
+         id:0,
+         typeName:'', //房间类型
+         typeSort:'', //房间序号
+       },
+       visible:false
      })
     const loading = ref(false)
     const roomtype = ref<FormInstance>()
@@ -42,9 +46,10 @@ export default {
       typeName:[{required:true,message:'类型名称不能为空',trigger:'blur'}],
       typeSort:[
           {required:true,message:'类型序号不能为空',trigger:'blur'},
-         // {type:"number",message:'类型序号只能数字',trigger:'blur'}
+          {pattern: /^[0-9]\d*$/, message: '类型序号只能是整数', trigger: 'blur'}
       ]
     })
+   // const emit = defineEmits(['closeAddUserForm','success'])
 
     // 新增房间类型信息
     const onSubmit=async (formEl: FormInstance | undefined)=>{
@@ -52,13 +57,14 @@ export default {
          return
        }
        await formEl.validate(async (valid,fields)=>{
+
          loading.value = true
          if(valid){
-           const { data }= await addRoomTypeApi(form)
+           const { data }= await addRoomTypeApi(state.form)
            if(data.success){
              ElMessage.success(data.message)
-              visible.value=false
-             //  emit('success')
+              state.visible=false
+              content.emit('success', {})
            }else {
              ElMessage.error(data.message)
            }
@@ -69,19 +75,37 @@ export default {
          loading.value = false
          })
     }
-
-
-
+    // 房间类型详情
+    const roomTypeInfo=async (prams)=>{
+      const {data}=await addRoomTypeInfoApi(prams)
+      if(data.code===200){
+        state.form =data.result
+        console.log('form--',state.form)
+      }else{
+        ElMessage.error('获取详情失败')
+      }
+    }
+    watch(()=>props.id,(val)=>{
+      if(val){ // 获取到id时，开始查询接口
+        roomTypeInfo({id:val})
+      }else{
+        state.form={
+              id:0,
+              typeName:'', //房间类型
+              typeSort:'', //房间序号
+        }
+      }
+    })
 
 
     return {
-       visible,
-       form,
+       ...toRefs(state),
        rules,
        onSubmit,
-      roomtype
+      roomtype,
      }
-  }
+  },
+
 }
 
 </script>

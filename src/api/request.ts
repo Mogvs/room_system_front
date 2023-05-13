@@ -31,7 +31,7 @@ export function getAction(url,parameter) {
         url: url,
         method: 'get',
         params: parameter,
-        headers: {'memberToken': memberToken,'userToken': token},
+      //  headers: {'memberToken': memberToken,'userToken': token},
     })
 }
 export default service

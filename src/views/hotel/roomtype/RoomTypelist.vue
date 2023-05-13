@@ -4,26 +4,26 @@
     <template #header>
       <div class="card-header">
         <h3>
-          <el-icon style="margin-right: 10px;"><UserFilled/></el-icon>用户管理
+          <el-icon style="margin-right: 10px;"><RoomTypeFilled/></el-icon>房间类型
         </h3>
         <!--搜索区域 start-->
         <div class="card-search">
           <el-row :gutter="24">
-            <el-col :span="8">
+            <el-col :span="16">
               <el-input :prefix-icon="Search" v-model="searchValue" @keyup.enter.native="search"
-                        placeholder="关键字搜索（回车）"/>
+                        placeholder="房间类型搜索（回车）"/>
             </el-col>
-            <el-col :span="8">
-              <el-select v-model="status" placeholder="请选择状态">
-                <el-option label="全部" value="-1"/>
-                <el-option label="封禁" value="0"/>
-                <el-option label="正常" value="1"/>
-              </el-select>
-            </el-col>
-            <el-col :span="3" style="display: inline-flex;justify-content: center;align-items: center;cursor: pointer">
+<!--            <el-col :span="8">-->
+<!--              <el-select v-model="status" placeholder="请选择状态">-->
+<!--                <el-option label="全部" value="-1"/>-->
+<!--                <el-option label="封禁" value="0"/>-->
+<!--                <el-option label="正常" value="1"/>-->
+<!--              </el-select>-->
+<!--            </el-col>-->
+            <el-col :span="2" style="display: inline-flex;justify-content: center;align-items: center;cursor: pointer">
               <el-icon style="font-size: 20px;color: #b3b6bc" @click="refresh"><Refresh/></el-icon>
             </el-col>
-            <el-col :span="5">
+            <el-col :span="6">
               <div class="my-button">
                 <el-button plain style="width: 100%;" color="#2fa7b9" @click="addroomType">添加类型</el-button>
               </div>
@@ -45,16 +45,16 @@
 
         <el-table-column label="类型名称">
           <template #default="scope">
-            <el-tooltip :content="scope.row.username" placement="top" effect="light">
-              <span class="highlight">{{scope.row.username}}</span>
+            <el-tooltip :content="scope.row.typeName" placement="top" effect="light">
+              <span class="highlight">{{scope.row.typeName}}</span>
             </el-tooltip>
           </template>
         </el-table-column>
 
         <el-table-column label="类型编号">
           <template #default="scope">
-            <el-tooltip :content="scope.row.realname" placement="top" effect="light">
-              <span class="highlight">{{scope.row.realname}}</span>
+            <el-tooltip :content="scope.row.typeSort" placement="top" effect="light">
+              <span class="highlight">{{scope.row.typeSort}}</span>
             </el-tooltip>
           </template>
         </el-table-column>
@@ -62,10 +62,10 @@
 
         <el-table-column label="操作">
           <template #default="scope">
-            <el-button size="small" @click="editUser(scope.row.id)">编辑</el-button>
+            <el-button size="small" @click="editRoomType(scope.row.id)">编辑</el-button>
             <el-popconfirm width="200px" confirm-button-text="确定" cancel-button-text="取消" :icon="Delete"
-                           icon-color="#626AEF" :title="'确定删除用户名为“'+scope.row.username+'”的用户吗？'"
-                           @confirm="delUser(scope.row.id)">
+                           icon-color="#626AEF" :title="'确定删除类型名称为“'+scope.row.typeName+'”吗？'"
+                           @confirm="delRoomType(scope.row.id)">
               <template #reference>
                 <el-button size="small" type="danger">删除</el-button>
               </template>
@@ -83,7 +83,7 @@
 
     </div>
     <!--表格区域 end-->
-    <RoomType ref="roomType" />
+    <RoomType ref="roomType"   @success="success" :id="id" :pageTitle="pageTitle"/>
   </el-card>
 
 
@@ -91,7 +91,8 @@
 
 <script setup lang="ts">
 import { reactive,toRefs, onMounted,watch,ref} from 'vue'
-import {deleteUserApi, getUserApi, getUserListApi} from "../../../api/system/user/user"
+import { getRoomTypeListApi,delRoomTypeApi} from "@/api/hotel/hotelApi"
+
 import { formatTime } from "../../../utils/date"
 import { ElMessage } from 'element-plus'
 import {exportExcel} from "../../../utils/exportExcel";
@@ -101,10 +102,6 @@ const state = reactive({
   searchValue: "",
   // 表格数据内容
   tableData: [],
-  // 登录用户信息
-  userInfo: null,
-  // 用户状态
-  status: null,
   // 总条数
   total: 0,
   // 每页显示行数
@@ -112,7 +109,9 @@ const state = reactive({
   // 当前页码
   pageIndex: 1,
   // 数据加载
-  loading:false
+  loading:false,
+  pageTitle:'新增',
+  id:'', // 数据id
 })
 const roomType = ref<InstanceType<typeof RoomType>>()   //泛类型   <typeof HelloWorld>的HelloWorld是组件
 // 获取用户列表数据
@@ -121,15 +120,14 @@ const loadData = async (state:any)=> {
   // 先清空数据
   state.tableData = []
   const params = {
-    'pageIndex': state.pageIndex,
+    'pageNo': state.pageIndex,
     'pageSize': state.pageSize,
-    'status': state.status==-1 ? '':state.status,
-    'searchValue': state.searchValue
+    'typeName': state.searchValue
   }
 
-  const { data } = await getUserListApi(params)
-  state.tableData = data.content
-  state.total = data.totalElements
+  const { data } = await getRoomTypeListApi(params)
+  state.tableData = data.result.records
+  state.total = data.result.total
   state.loading = false
 
 }
@@ -138,8 +136,6 @@ const loadData = async (state:any)=> {
 const refresh = ()=> {
   // 搜索表单内容
   state.searchValue = ""
-  // 筛选下拉框内容
-  state.status = null
   // 更新数据
   loadData(state)
 }
@@ -180,46 +176,47 @@ const Nindex = (index:number)=> {
   const pageSize = state.pageSize // 每页条数
   return index+1+(page-1)*pageSize
 }
-
-// 定义表单标题
-const addTitle = "新增类型"
 // 添加用户
 const addroomType = ()=> {
+  state.id=''
+  state.pageTitle='新增'
   roomType.value.visible=true
 }
 // 关闭新增用户弹出框
-const closeAddUserForm = () => {
+const closeAddRoomTypeForm = () => {
   roomType.value.visible=false
 }
 
 // 提交表单回调函数
 const success = ()=> {
   loadData(state)
-  closeAddUserForm()
-  closeEditUserForm()
+  closeAddRoomTypeForm()
+ // closeEditRoomTypeForm()
 }
 
 // 编辑用户弹出状态
-const editUserDialogFormVisible = ref(false)
-const editTitle = ref('编辑用户')
+const editRoomTypeDialogFormVisible = ref(false)
 
 // 编辑用户信息
-const userInfo = ref()
-const editUser = async (id:number)=> {
-  const { data } = await getUserApi(id)
-  userInfo.value = data.result
-  editUserDialogFormVisible.value = true
+const editRoomType = async (id:number)=> {
+  state.pageTitle='编辑'
+  state.id=String(id),
+  roomType.value.visible=true
+  // const { data } = await getRoomTypeApi(id)
+  // userInfo.value = data.result
+  // editRoomTypeDialogFormVisible.value = true
 }
 // 关闭编辑用户弹出框
-const closeEditUserForm = ()=> {
-  editUserDialogFormVisible.value = false
+const closeEditRoomTypeForm = ()=> {
+  editRoomTypeDialogFormVisible.value = false
 }
 
 // 删除用户信息
-const delUser = async (id:number)=> {
+const delRoomType = async (id:number)=> {
   if (id == null) return
-  const { data } = await deleteUserApi(id)
-  if (data.status===200){
+  let params={id:id}
+  const { data } = await delRoomTypeApi(params)
+  if (data.code===200){
     ElMessage.success('删除成功')
     await loadData(state)
   }else {
@@ -250,7 +247,7 @@ onMounted(()=> {
   loadData(state)
 })
 
-const { tableData,pageIndex,pageSize,loading,total,status,searchValue } = toRefs(state)
+const { tableData,pageIndex,pageSize,loading,total,status,searchValue,pageTitle,id } = toRefs(state)
 </script>
 
 <style scoped>
