@@ -62,7 +62,7 @@ export const asyncRoutes = [
         path:'/hotel',
         name:'hotel',
         meta:{
-            title: '房间管理',
+            title: '酒店管理',
             icon: 'GoldMedal',
             role: ['ROLE_ADMIN']
         },
@@ -80,6 +80,16 @@ export const asyncRoutes = [
                     role: ['ROLE_ADMIN']
                 },
                 component: ()=> import('@/views/hotel/roomtype/RoomTypelist.vue')
+            },
+            {
+                path: 'floorlist',
+                name: 'FloorList',
+                meta: {
+                    title: '楼层管理',
+                    icon: 'Histogram',
+                    role: ['ROLE_ADMIN']
+                },
+                component: ()=> import('@/views/hotel/floor/FloorList.vue')
             },
 
         ]

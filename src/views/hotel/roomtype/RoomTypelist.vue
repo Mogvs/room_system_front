@@ -151,18 +151,6 @@ const search = ()=> {
   }
 }
 
-// 监听用户状态下拉框内容的改变
-watch(()=> state.status,(val,preVal)=>{
-  if(val){
-    state.searchValue=""
-    if(state.status===-1){
-      // 查询全部内容
-      loadData(null)
-    }else {
-      loadData(state)
-    }
-  }
-})
 
 // 切换页码执行事件 val 当前页码
 const changePage = (val:number)=> {
