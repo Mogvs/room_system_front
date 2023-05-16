@@ -6,7 +6,8 @@ import pinia from "./store";
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 // 导入所有element-plus图标
-import * as ElementPlusIconsVue from '@element-plus/icons-vue'
+//import * as ElementPlusIconsVue from '@element-plus/icons-vue'
+import * as ElIcons from '@element-plus/icons'
 // svg-icons注册导入
 import 'virtual:svg-icons-register'
 import SvgIcon from "./components/SvgIcon/index.vue"
@@ -14,9 +15,12 @@ import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 const app = createApp(App)
 app.use(router)
 app.use(pinia)
-// 将所有图标进行全局注册
-for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
-    app.component(key, component)
+// // 将所有图标进行全局注册
+// for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+//     app.component(key, component)
+// }
+for (const name in ElIcons){
+    app.component(name,(ElIcons as any)[name])
 }
 app.use(ElementPlus,{
     locale:zhCn

@@ -15,7 +15,7 @@
 
    <template v-for="(v,index) in menuData" :key="index">
      <!--如果菜单有子菜单，则循环子菜单-->
-     <el-sub-menu v-if="v.isMenu && v.funcNode!=1" :index="index">
+     <el-sub-menu v-if="v.isMenu && v.funcNode!=1" :index="index+''">
        <template #title>
          <el-icon>
            <component :is="v.meta.icon"></component>

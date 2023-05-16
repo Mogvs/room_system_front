@@ -4,13 +4,13 @@
     <template #header>
       <div class="card-header">
         <h3>
-          <el-icon style="margin-right: 10px;"><RoomTypeFilled/></el-icon>房间类型
+          <el-icon style="margin-right: 10px;"><Histogram/></el-icon>房间类型
         </h3>
         <!--搜索区域 start-->
         <div class="card-search">
           <el-row :gutter="24">
             <el-col :span="16">
-              <el-input :prefix-icon="Search" v-model="searchValue" @keyup.enter.native="search"
+              <el-input :prefix-icon="Search" v-model="searchParams.typeName" @keyup.enter.native="hooks.search"
                         placeholder="房间类型搜索（回车）"/>
             </el-col>
 <!--            <el-col :span="8">-->
@@ -21,7 +21,7 @@
 <!--              </el-select>-->
 <!--            </el-col>-->
             <el-col :span="2" style="display: inline-flex;justify-content: center;align-items: center;cursor: pointer">
-              <el-icon style="font-size: 20px;color: #b3b6bc" @click="refresh"><Refresh/></el-icon>
+              <el-icon style="font-size: 20px;color: #b3b6bc" @click="hooks.refresh"><Refresh/></el-icon>
             </el-col>
             <el-col :span="6">
               <div class="my-button">
@@ -41,7 +41,7 @@
                 style="width: 100%;text-align: center" :cell-style="{textAlign: 'center'}"
                 :header-cell-style="{fontSize: '15px', background: '#083a6d',color: 'white',textAlign: 'center'}">
 
-        <el-table-column label="序号" width="100" type="index" :index="Nindex"/>
+        <el-table-column label="序号" width="100" type="index" :index="hooks.Nindex"/>
 
         <el-table-column label="类型名称">
           <template #default="scope">
@@ -53,7 +53,7 @@
 
         <el-table-column label="类型编号">
           <template #default="scope">
-            <el-tooltip :content="scope.row.typeSort" placement="top" effect="light">
+            <el-tooltip :content="scope.row.typeSort+''" placement="top" effect="light">
               <span class="highlight">{{scope.row.typeSort}}</span>
             </el-tooltip>
           </template>
@@ -65,7 +65,7 @@
             <el-button size="small" @click="editRoomType(scope.row.id)">编辑</el-button>
             <el-popconfirm width="200px" confirm-button-text="确定" cancel-button-text="取消" :icon="Delete"
                            icon-color="#626AEF" :title="'确定删除类型名称为“'+scope.row.typeName+'”吗？'"
-                           @confirm="delRoomType(scope.row.id)">
+                           @confirm="hooks.deleteRow(scope.row.id)">
               <template #reference>
                 <el-button size="small" type="danger">删除</el-button>
               </template>
@@ -77,13 +77,13 @@
       <!--分页 start-->
       <el-pagination background layout="total,sizes,prev,pager,next,jumper" :total="total"
                      v-model:page-size="pageSize"
-                     @current-change="changePage"
+                     @current-change="hooks.changePage"
                      :page-sizes="[10,20,30,40]"/>
       <!--分页 end-->
 
     </div>
     <!--表格区域 end-->
-    <RoomType ref="roomType"   @success="success" :id="id" :pageTitle="pageTitle"/>
+    <RoomType ref="roomType"   @onHandle="onHandle" :id="id" :pageTitle="pageTitle"/>
   </el-card>
 
 
@@ -92,79 +92,22 @@
 <script setup lang="ts">
 import { reactive,toRefs, onMounted,watch,ref} from 'vue'
 import { getRoomTypeListApi,delRoomTypeApi} from "@/api/hotel/hotelApi"
-
-import { formatTime } from "../../../utils/date"
+import { Delete, Search } from "@element-plus/icons-vue";
 import { ElMessage } from 'element-plus'
-import {exportExcel} from "../../../utils/exportExcel";
 import  RoomType from "./module/RoomType.vue"
+import hooks from "@/hooks/tableHooks";
+hooks.tabState.url={
+  list:'/hotel/roomtype/list',
+  delete:'/hotel/roomtype/delete'
+}
 const state = reactive({
-  // 搜索表单内容
-  searchValue: "",
-  // 表格数据内容
-  tableData: [],
-  // 总条数
-  total: 0,
-  // 每页显示行数
-  pageSize: 10,
-  // 当前页码
-  pageIndex: 1,
-  // 数据加载
   loading:false,
   pageTitle:'新增',
   id:'', // 数据id
 })
 const roomType = ref<InstanceType<typeof RoomType>>()   //泛类型   <typeof HelloWorld>的HelloWorld是组件
-// 获取用户列表数据
-const loadData = async (state:any)=> {
-  state.loading = true
-  // 先清空数据
-  state.tableData = []
-  const params = {
-    'pageNo': state.pageIndex,
-    'pageSize': state.pageSize,
-    'typeName': state.searchValue
-  }
 
-  const { data } = await getRoomTypeListApi(params)
-  state.tableData = data.result.records
-  state.total = data.result.total
-  state.loading = false
-
-}
-
-// 刷新
-const refresh = ()=> {
-  // 搜索表单内容
-  state.searchValue = ""
-  // 更新数据
-  loadData(state)
-}
-
-// 搜索
-const search = ()=> {
-  if(state.searchValue !==null){
-    ElMessage({
-      type: 'success',
-      message: `关键字“${state.searchValue}”搜索内容如下`
-    })
-    loadData(state)
-  }
-}
-
-
-// 切换页码执行事件 val 当前页码
-const changePage = (val:number)=> {
-  state.pageIndex = val
-  loadData(state)
-}
-
-// 处理序号
-const Nindex = (index:number)=> {
-  const page = state.pageIndex // 当前的页面
-  const pageSize = state.pageSize // 每页条数
-  return index+1+(page-1)*pageSize
-}
-// 添加用户
+// 添加房间类型信息
 const addroomType = ()=> {
   state.id=''
   state.pageTitle='新增'
@@ -175,13 +118,6 @@ const closeAddRoomTypeForm = () => {
   roomType.value.visible=false
 }
 
-// 提交表单回调函数
-const success = ()=> {
-  loadData(state)
-  closeAddRoomTypeForm()
- // closeEditRoomTypeForm()
-}
-
 // 编辑用户弹出状态
 const editRoomTypeDialogFormVisible = ref(false)
 
@@ -190,52 +126,18 @@ const editRoomType = async (id:number)=> {
   state.pageTitle='编辑'
   state.id=String(id),
   roomType.value.visible=true
-  // const { data } = await getRoomTypeApi(id)
-  // userInfo.value = data.result
-  // editRoomTypeDialogFormVisible.value = true
-}
-// 关闭编辑用户弹出框
-const closeEditRoomTypeForm = ()=> {
-  editRoomTypeDialogFormVisible.value = false
 }
 
-// 删除用户信息
-const delRoomType = async (id:number)=> {
-  if (id == null) return
-  let params={id:id}
-  const { data } = await delRoomTypeApi(params)
-  if (data.code===200){
-    ElMessage.success('删除成功')
-    await loadData(state)
-  }else {
-    ElMessage.error('删除失败')
-  }
+const onHandle=()=>{
+  editRoomTypeDialogFormVisible.value=false
+  hooks.refresh()
 }
-
-// 定义需要导出的列名对象
-const column = [
-  {name: 'username',label: '类型名称'},
-  {name: 'realname',label: '类型序号'},
-  {name: 'status',label: '状态'},
-]
-
-// 导出excel函数
-const exportExcelAction = ()=> {
-  exportExcel({
-    column,
-    data: state.tableData,
-    filename: '房间类型信息数据',
-    format: 'xlsx',
-    autowidth: true
-  })
-}
-
 // 挂载后加载数据
 onMounted(()=> {
-  loadData(state)
+  hooks.loadData(hooks.tabState)
 })
-
-const { tableData,pageIndex,pageSize,loading,total,status,searchValue,pageTitle,id } = toRefs(state)
+const {searchParams,tableData,pageSize,total}=toRefs(hooks.tabState)
+const { loading,status,searchValue,pageTitle,id } = toRefs(state)
 </script>
 
 <style scoped>

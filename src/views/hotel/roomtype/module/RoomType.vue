@@ -1,6 +1,6 @@
 <template>
 
-  <el-dialog :title="'房间类型'+pageTitle"  v-model="visible" >
+  <el-dialog :title="pageTitle+'房间类型'"  v-model="visible" >
     <el-form  ref="roomtype" :model="form" :rules="rules" :loading="loading" >
       <el-row :gutter="24">
         <el-col :span="24">
@@ -16,8 +16,8 @@
       </el-row>
     </el-form>
     <div slot="footer" class="dialong__button--wrap">
-      <el-button @click="visible = false">取 消</el-button>
-      <el-button color="#083a6d" type="primary" @click="onSubmit(roomtype)">确 定</el-button>
+      <el-button @click="colse">取 消</el-button>
+      <el-button color="#083a6d" type="primary" @click="onSubmit(roomtype)">保 存</el-button>
     </div>
   </el-dialog>
 
@@ -26,7 +26,7 @@
 <script  lang="ts">
 import {ref, reactive, toRefs, watch} from 'vue'
 import { ElMessage,FormInstance,FormRules } from 'element-plus'
-import {addRoomTypeApi,addRoomTypeInfoApi} from "@/api/hotel/hotelApi";
+import {saveRoomTypeApi,roomTypeInfoApi,} from "@/api/hotel/hotelApi";
 import {addUserApi} from "@/api/system/user/user";
 export default {
   name:'RoomType',
@@ -60,11 +60,11 @@ export default {
 
          loading.value = true
          if(valid){
-           const { data }= await addRoomTypeApi(state.form)
+           const { data }= await saveRoomTypeApi(state.form)
            if(data.success){
              ElMessage.success(data.message)
               state.visible=false
-              content.emit('success', {})
+              content.emit('onHandle')
            }else {
              ElMessage.error(data.message)
            }
@@ -77,7 +77,7 @@ export default {
     }
     // 房间类型详情
     const roomTypeInfo=async (prams)=>{
-      const {data}=await addRoomTypeInfoApi(prams)
+      const {data}=await roomTypeInfoApi(prams)
       if(data.code===200){
         state.form =data.result
         console.log('form--',state.form)
@@ -97,12 +97,18 @@ export default {
       }
     })
 
-
+  const colse=_=>{
+    //表单关闭,初始化验证
+    roomtype.value?.clearValidate()
+    state.visible=false
+  }
     return {
        ...toRefs(state),
        rules,
        onSubmit,
-      roomtype,
+       colse,
+       loading,
+       roomtype,
      }
   },
 
